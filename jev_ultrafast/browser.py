@@ -53,14 +53,14 @@ class Browser:
                       const autocomplete=action.kind==='fill' && field?.getAttribute('role')==='combobox';
                       let frames=0, stopped=false;
                       const finish=()=>{stopped=true;resolve()};
-                      setTimeout(finish,autocomplete ? 200 : 50);
+                      setTimeout(finish,autocomplete ? 200 : 35);
                       const ready=()=>{
                         if (stopped) return;
                         const ids=(field?.getAttribute('aria-controls')||field?.getAttribute('aria-owns')||'')
                           .split(/\\s+/).filter(Boolean);
                         const roots=ids.length ? ids.map(id=>document.getElementById(id)).filter(Boolean) : [document];
                         const options=roots.flatMap(root=>[...root.querySelectorAll('[role="option"]')]);
-                        if (++frames>=2 && (!autocomplete || options.some(e=>{
+                        if ((autocomplete ? ++frames>=2 : ++frames>=1) && (!autocomplete || options.some(e=>{
                           const r=e.getBoundingClientRect();
                           return r.width && r.height && r.bottom>0 && r.top<innerHeight &&
                             e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
@@ -74,15 +74,15 @@ class Browser:
                 )
             except RuntimeError:
                 pass
-        for attempt in range(10):
+        for attempt in range(15):
             try:
                 return browser_operation(
                     {"operation": "observe", "session": self.session, "screenshot": screenshot}
                 )
             except StalePage:
-                if attempt == 9:
+                if attempt == 14:
                     raise
-                time.sleep(0.02)
+                time.sleep(min(0.08, 0.02 * (1.15 ** attempt)))
         raise StalePage("Page did not settle")
 
     def fresh(self, page, action=None):
@@ -136,7 +136,7 @@ def browser_operation(request):
         action = request["action"]
         kind = action["kind"]
         if kind == "scroll":
-            call("Input.dispatchMouseEvent", type="mouseWheel", x=550, y=650, deltaX=0, deltaY=action["delta"])
+            call("Input.dispatchMouseEvent", type="mouseWheel", x=560, y=390, deltaX=0, deltaY=action["delta"])
         elif kind != "wait":
             if type(action["node"]) is not int:
                 raise ValueError("Invalid observed node")
