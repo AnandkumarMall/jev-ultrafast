@@ -61,7 +61,9 @@
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
     let el;
     while ((el = walker.nextNode())) {
-      if (el.shadowRoot) res.push(...queryAll(el.shadowRoot, sel));
+      if (el.shadowRoot && visible(el) && !el.closest('[aria-hidden="true"],[inert],[aria-disabled="true"]')) {
+        res.push(...queryAll(el.shadowRoot, sel));
+      }
     }
     return res;
   };
@@ -93,7 +95,7 @@
   }
   const words=[], walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   let node, length=0, lastParent=null, parentOk=false;
-  while ((node=walker.nextNode()) && length<6000) {
+  while ((node=walker.nextNode()) && length<3000) {
     const value=node.textContent.trim();
     if (!value) continue;
     const parent=node.parentElement;
@@ -108,11 +110,16 @@
       }
     }
     if (parentOk) {
-      words.push(value);
-      length += value.length;
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const r = range.getBoundingClientRect();
+      if (r.width>0 && r.height>0 && r.bottom>0 && r.top<innerHeight && r.right>0 && r.left<innerWidth) {
+        words.push(value);
+        length += value.length;
+      }
     }
   }
-  const text=words.join('\n').slice(0,3000), height=document.documentElement.scrollHeight;
+  const text=words.join('\n'), height=document.documentElement.scrollHeight;
   const page_key=cache.pageKey(), guards={};
   for (const a of actions) if (!(a.node in guards)) guards[a.node]=cache.guard(cache.nodes.get(a.node));
   // Compare meaning and identity. Geometry is always resolved and hit-tested just before input.

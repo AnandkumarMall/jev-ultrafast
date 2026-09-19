@@ -60,7 +60,7 @@ class Browser:
                           .split(/\\s+/).filter(Boolean);
                         const roots=ids.length ? ids.map(id=>document.getElementById(id)).filter(Boolean) : [document];
                         const options=roots.flatMap(root=>[...root.querySelectorAll('[role="option"]')]);
-                        if ((autocomplete ? ++frames>=2 : ++frames>=1) && (!autocomplete || options.some(e=>{
+                        if (++frames>=2 && (!autocomplete || options.some(e=>{
                           const r=e.getBoundingClientRect();
                           return r.width && r.height && r.bottom>0 && r.top<innerHeight &&
                             e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
@@ -136,7 +136,7 @@ def browser_operation(request):
         action = request["action"]
         kind = action["kind"]
         if kind == "scroll":
-            call("Input.dispatchMouseEvent", type="mouseWheel", x=560, y=390, deltaX=0, deltaY=action["delta"])
+            call("Input.dispatchMouseEvent", type="mouseWheel", x=5, y=5, deltaX=0, deltaY=action["delta"])
         elif kind != "wait":
             if type(action["node"]) is not int:
                 raise ValueError("Invalid observed node")
@@ -148,7 +148,13 @@ def browser_operation(request):
               if (action.kind==='fill' && (e.readOnly || e.getAttribute('aria-readonly')==='true')) return null;
               const r=e.getBoundingClientRect(), x=r.x+r.width/2, y=r.y+r.height/2;
               if (!r.width || !r.height || x<0 || y<0 || x>=innerWidth || y>=innerHeight) return null;
-              if (!e.contains(document.elementFromPoint(x,y))) return null;
+              let hit = document.elementFromPoint(x,y);
+              while (hit?.shadowRoot) {
+                const next = hit.shadowRoot.elementFromPoint(x,y);
+                if (!next || next === hit) break;
+                hit = next;
+              }
+              if (hit !== e && !e.contains(hit)) return null;
               if (action.kind==='select') {
                 if (e.tagName!=='SELECT' || ![...e.options].some(o=>o.value===action.value &&
                     !o.disabled && !o.closest('optgroup[disabled]'))) return null;

@@ -80,23 +80,25 @@ def action_space(actions):
         group[target] = action
     return elements, targets, controls
 
+def format_str(s):
+    return str(s).replace("'", "\\'").replace("\n", " ").replace("\r", " ").strip()
 
 def choose(state, goal, history):
     elements, targets, controls = action_space(state["actions"])
     
     compressed_elements = []
     for e in elements:
-        parts = [f"[{e['index']}] {e['role']} '{e['label']}'"]
+        parts = [f"[{e['index']}] {e['role']} '{format_str(e['label'])}'"]
         if e.get("value"):
-            parts.append(f"(value: '{e['value']}')")
-        if e.get("checked") == "true":
-            parts.append("(checked)")
+            parts.append(f"(value: '{format_str(e['value'])}')")
+        if "checked" in e:
+            parts.append(f"(checked: {e['checked']})")
         if e.get("selected") == "true":
             parts.append("(selected)")
         if e.get("expanded") == "true":
             parts.append("(expanded)")
         if e.get("options"):
-            parts.append(f"[Options: {', '.join(o['label'] for o in e['options'][:5])}]")
+            parts.append(f"[Options: {', '.join(format_str(o['label']) for o in e['options'][:5])}]")
         compressed_elements.append(" ".join(parts))
     elements_str = "\n".join(compressed_elements)
 
@@ -115,7 +117,7 @@ def choose(state, goal, history):
         questions[operation.lower() + "_target"] = {
             "type": "choice",
             "criteria": {
-                index: f"[{index}] {a['label']}" + (f" (value: '{a.get('current_value') or a.get('value')}')" if a.get('current_value') or a.get('value') else "")
+                index: f"[{index}] {format_str(a['label'])}" + (f" (value: '{format_str(a.get('current_value') or a.get('value'))}')" if a.get('current_value') or a.get('value') else "")
                 for index, a in candidates.items()
             },
             "instructions": {"goal": goal, "operation": operation},

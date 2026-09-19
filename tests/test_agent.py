@@ -124,8 +124,8 @@ def test_target_head_receives_control_state_and_full_next_step_rules(monkeypatch
         questions = body["questions"]
         state = body["state"]
         target = questions["click_target"]
-        assert "(checked)" in state["elements"]
-        assert "Advance the user's entire goal" in state["rules"]
+        assert "(checked: true)" in state["elements"]
+        assert model.NEXT_ACTION in state["rules"]
         return {
             "model": "test",
             "answers": {
