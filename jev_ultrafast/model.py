@@ -114,17 +114,14 @@ def choose(state, goal, history):
     operations.update(DONE="Every requirement is visibly satisfied.", BLOCKED="No supported operation can progress.")
     questions = {"operation": {"type": "choice", "criteria": operations, "instructions": {"goal": goal}}}
     for operation, candidates in targets.items():
+        criteria = {}
+        for index, a in candidates.items():
+            val = a["current_value"] if "current_value" in a else a.get("value")
+            val_str = f" (value: '{format_str(val)}')" if val else ""
+            criteria[index] = f"[{index}] {format_str(a['label'])}{val_str}"
         questions[operation.lower() + "_target"] = {
             "type": "choice",
-            "criteria": {
-                index: f"[{index}] {format_str(a['label'])}"
-                + (
-                    f" (value: '{format_str(a.get('current_value') or a.get('value'))}')"
-                    if a.get("current_value") or a.get("value")
-                    else ""
-                )
-                for index, a in candidates.items()
-            },
+            "criteria": criteria,
             "instructions": {"goal": goal, "operation": operation},
         }
     body = {

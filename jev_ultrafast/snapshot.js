@@ -14,8 +14,9 @@
     if (!e || seen.has(e)) return '';
     if (seen.size === 0 && nameCache.has(e)) return nameCache.get(e);
     seen.add(e);
+    const root = e.getRootNode?.();
     const referenced=(e.getAttribute('aria-labelledby')||'').split(/\s+/)
-      .map(id=>name(document.getElementById(id),seen)).filter(Boolean).join(' ');
+      .map(id=>name(root?.getElementById?.(id) || document.getElementById(id),seen)).filter(Boolean).join(' ');
     const res = referenced || e.getAttribute('aria-label') ||
       [...(e.labels||[])].map(l=>name(l,seen)).filter(Boolean).join(' ') ||
       (['button','submit','reset'].includes(e.type) ? e.value : '') || e.getAttribute('alt') ||
@@ -45,17 +46,6 @@
     }
     return null;
   };
-  cache.pageKey=()=>[performance.timeOrigin,location.href,scrollX,scrollY,innerWidth,innerHeight,
-    [...document.querySelectorAll('input,textarea,select')].filter(safe)
-      .map(e=>[identity(e),e.value,e.checked,e.selectedIndex,e.disabled,e.readOnly])];
-  cache.guard=e=>{
-    if (!e?.isConnected || !visible(e)) return null;
-    const scope=e.closest('form,dialog,[role="dialog"],article,li,tr,[role="row"]') || e.parentElement;
-    return [identity(e),role(e),name(e),e.value??null,e.checked??null,e.selectedIndex??null,
-      e.readOnly??null,e.matches(':disabled'),e.getAttribute('aria-disabled'),
-      e.getAttribute('aria-expanded'),e.getAttribute('aria-checked'),e.getAttribute('aria-selected'),
-      e.getAttribute('href'),scope?.innerText?.slice(0,6000)||''];
-  };
   const queryAll = (root, sel) => {
     const res = [...root.querySelectorAll(sel)];
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
@@ -66,6 +56,17 @@
       }
     }
     return res;
+  };
+  cache.pageKey=()=>[performance.timeOrigin,location.href,scrollX,scrollY,innerWidth,innerHeight,
+    queryAll(document, 'input,textarea,select').filter(safe)
+      .map(e=>[identity(e),e.value,e.checked,e.selectedIndex,e.disabled,e.readOnly])];
+  cache.guard=e=>{
+    if (!e?.isConnected || !visible(e)) return null;
+    const scope=e.closest('form,dialog,[role="dialog"],article,li,tr,[role="row"]') || e.parentElement;
+    return [identity(e),role(e),name(e),e.value??null,e.checked??null,e.selectedIndex??null,
+      e.readOnly??null,e.matches(':disabled'),e.getAttribute('aria-disabled'),
+      e.getAttribute('aria-expanded'),e.getAttribute('aria-checked'),e.getAttribute('aria-selected'),
+      e.getAttribute('href'),scope?.innerText?.slice(0,6000)||''];
   };
   const actions=[];
   for (const e of queryAll(document, selector)) {

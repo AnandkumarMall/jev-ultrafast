@@ -156,7 +156,12 @@ def browser_operation(request):
                 if (!next || next === hit) break;
                 hit = next;
               }
-              if (hit !== e && !e.contains(hit)) return null;
+              let current = hit, ok = false;
+              while (current) {
+                if (current === e) { ok = true; break; }
+                current = current.parentElement || current.getRootNode()?.host;
+              }
+              if (!ok) return null;
               if (action.kind==='select') {
                 if (e.tagName!=='SELECT' || ![...e.options].some(o=>o.value===action.value &&
                     !o.disabled && !o.closest('optgroup[disabled]'))) return null;
