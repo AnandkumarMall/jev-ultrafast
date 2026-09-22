@@ -13,6 +13,7 @@ from browser_harness.helpers import cdp
 READ_STATE = Path(__file__).with_name("snapshot.js").read_text()
 MARKER = f"(() => {{ const state={READ_STATE}; return state?.marker ?? null; }})()"
 
+
 class StalePage(ValueError):
     """A decision no longer refers to the observed page."""
 
@@ -68,7 +69,9 @@ class Browser:
                         else requestAnimationFrame(ready);
                       };
                       requestAnimationFrame(ready);
-                    }))(""" + json.dumps(action) + ")",
+                    }))("""
+                    + json.dumps(action)
+                    + ")",
                     awaitPromise=True,
                     returnByValue=True,
                 )
@@ -76,13 +79,11 @@ class Browser:
                 pass
         for attempt in range(15):
             try:
-                return browser_operation(
-                    {"operation": "observe", "session": self.session, "screenshot": screenshot}
-                )
+                return browser_operation({"operation": "observe", "session": self.session, "screenshot": screenshot})
             except StalePage:
                 if attempt == 14:
                     raise
-                time.sleep(min(0.08, 0.02 * (1.15 ** attempt)))
+                time.sleep(min(0.08, 0.02 * (1.15**attempt)))
         raise StalePage("Page did not settle")
 
     def fresh(self, page, action=None):
@@ -141,7 +142,8 @@ def browser_operation(request):
             if type(action["node"]) is not int:
                 raise ValueError("Invalid observed node")
             # Code-owned node IDs refer to actual observed elements, never model-generated selectors.
-            target = evaluate("""(action => {
+            target = evaluate(
+                """(action => {
               const e=window.__jevFast?.nodes.get(action.node);
               if (!e?.isConnected || e.matches(':disabled') || e.closest('[aria-disabled="true"],[inert]') ||
                   !e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})) return null;
@@ -163,7 +165,10 @@ def browser_operation(request):
                 e.dispatchEvent(new Event('change',{bubbles:true}));
               }
               return {x,y};
-            })(""" + json.dumps(action) + ")")
+            })("""
+                + json.dumps(action)
+                + ")"
+            )
             if target is None:
                 if kind == "select":
                     raise RuntimeError("Dropdown execution was not confirmed; inspect before retrying.")
