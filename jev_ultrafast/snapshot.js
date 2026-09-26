@@ -10,20 +10,20 @@
   const visible = e => !e.closest('[aria-hidden="true"],[inert]') &&
     e.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
   const nameCache = new WeakMap();
-  const name = (e,seen=new Set()) => {
+  const name = (e,seen=new Set(),useCache=true) => {
     if (!e || seen.has(e)) return '';
-    if (seen.size === 0 && nameCache.has(e)) return nameCache.get(e);
+    if (useCache && seen.size === 0 && nameCache.has(e)) return nameCache.get(e);
     seen.add(e);
     const root = e.getRootNode?.();
     const referenced=(e.getAttribute('aria-labelledby')||'').split(/\s+/)
-      .map(id=>name(root?.getElementById?.(id) || document.getElementById(id),seen)).filter(Boolean).join(' ');
+      .map(id=>name(root?.getElementById?.(id) || document.getElementById(id),seen,useCache)).filter(Boolean).join(' ');
     const res = referenced || e.getAttribute('aria-label') ||
-      [...(e.labels||[])].map(l=>name(l,seen)).filter(Boolean).join(' ') ||
+      [...(e.labels||[])].map(l=>name(l,seen,useCache)).filter(Boolean).join(' ') ||
       (['button','submit','reset'].includes(e.type) ? e.value : '') || e.getAttribute('alt') ||
       (e.tagName==='INPUT' ? '' : [...e.childNodes].map(n=>n.nodeType===3 ? n.textContent :
-        n.nodeType===1 && n.getAttribute('aria-hidden')!=='true' ? name(n,seen) : '').join(' ').trim()) ||
+        n.nodeType===1 && n.getAttribute('aria-hidden')!=='true' ? name(n,seen,useCache) : '').join(' ').trim()) ||
       e.getAttribute('title') || e.getAttribute('placeholder') || '';
-    if (seen.size === 1) nameCache.set(e, res);
+    if (useCache && seen.size === 1) nameCache.set(e, res);
     return res;
   };
   const roles=['button','link','checkbox','radio','switch','tab','menuitem','menuitemradio',
@@ -63,7 +63,7 @@
   cache.guard=e=>{
     if (!e?.isConnected || !visible(e)) return null;
     const scope=e.closest('form,dialog,[role="dialog"],article,li,tr,[role="row"]') || e.parentElement;
-    return [identity(e),role(e),name(e),e.value??null,e.checked??null,e.selectedIndex??null,
+    return [identity(e),role(e),name(e,new Set(),false),e.value??null,e.checked??null,e.selectedIndex??null,
       e.readOnly??null,e.matches(':disabled'),e.getAttribute('aria-disabled'),
       e.getAttribute('aria-expanded'),e.getAttribute('aria-checked'),e.getAttribute('aria-selected'),
       e.getAttribute('href'),scope?.innerText?.slice(0,6000)||''];
